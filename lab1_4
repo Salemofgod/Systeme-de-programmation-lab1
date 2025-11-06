@@ -1,0 +1,97 @@
+import os
+import shutil
+
+def supprimer_repertoire_force(chemin_repertoire: str) -> bool:
+    """
+    Supprime un répertoire et tout son contenu (équivalent à 'rm -rf')
+    avec vérification des droits d'accès.
+    """
+    
+    # Vérifier si le chemin existe
+    if not os.path.exists(chemin_repertoire):
+        print(f"Erreur : Le répertoire '{chemin_repertoire}' n'existe pas.")
+        return False
+    
+    # Vérifier que c'est bien un répertoire
+    if not os.path.isdir(chemin_repertoire):
+        print(f"Erreur : '{chemin_repertoire}' n'est pas un répertoire.")
+        return False
+    
+    try:
+        # Vérifier les permissions
+        if not os.access(chemin_repertoire, os.R_OK | os.W_OK | os.X_OK):
+            print(f"Erreur : Permissions insuffisantes pour '{chemin_repertoire}'")
+            return False
+        
+        print(f"Suppression de '{chemin_repertoire}' et de tout son contenu...")
+        
+        # Supprimer récursivement le répertoire et son contenu
+        shutil.rmtree(chemin_repertoire)
+        
+        print(f"Répertoire '{chemin_repertoire}' supprimé avec succès.")
+        return True
+        
+    except PermissionError as e:
+        print(f"Erreur de permission : {e}")
+        return False
+    except OSError as e:
+        print(f"Erreur système : {e}")
+        return False
+    except Exception as e:
+        print(f"Erreur inattendue : {e}")
+        return False
+
+def creer_repertoire_test():
+    """Crée une structure de test pour démontrer la suppression"""
+    test_dir = "repertoire_test"
+    
+    if os.path.exists(test_dir):
+        supprimer_repertoire_force(test_dir)
+    
+    os.makedirs(test_dir)
+    
+    # Créer quelques fichiers et sous-répertoires
+    with open(os.path.join(test_dir, "fichier1.txt"), "w") as f:
+        f.write("Fichier de test 1")
+    
+    with open(os.path.join(test_dir, "fichier2.txt"), "w") as f:
+        f.write("Fichier de test 2")
+    
+    sous_dir = os.path.join(test_dir, "sous_repertoire")
+    os.makedirs(sous_dir)
+    
+    with open(os.path.join(sous_dir, "fichier3.txt"), "w") as f:
+        f.write("Fichier de test 3")
+    
+    print(f"Répertoire de test créé : {test_dir}")
+    return test_dir
+
+# Exemple d'utilisation
+if __name__ == "__main__":
+    print("=== DÉMONSTRATION SUPPRESSION RÉPERTOIRE ===\n")
+    
+    # Créer un répertoire de test
+    repertoire_test = creer_repertoire_test()
+    
+    print("\n1. Suppression avec vérification des permissions :")
+    success1 = supprimer_repertoire_force(repertoire_test)
+    print(f"Résultat : {'SUCCÈS' if success1 else 'ÉCHEC'}")  # CORRECTION : guillemets simples
+    
+    # Recréer pour tester d'autres cas
+    repertoire_test = creer_repertoire_test()
+    
+    print("\n2. Test avec répertoire inexistant :")
+    success2 = supprimer_repertoire_force("repertoire_inexistant")
+    print(f"Résultat : {'SUCCÈS' if success2 else 'ÉCHEC'}")  # CORRECTION : guillemets simples
+    
+    print("\n3. Test avec fichier (pas répertoire) :")
+    with open("fichier_test.txt", "w") as f:
+        f.write("test")
+    success3 = supprimer_repertoire_force("fichier_test.txt")
+    print(f"Résultat : {'SUCCÈS' if success3 else 'ÉCHEC'}")  # CORRECTION : guillemets simples
+    
+    # Nettoyage
+    if os.path.exists("fichier_test.txt"):  # CORRECTION : deux-points au lieu de point-virgule
+        os.remove("fichier_test.txt")
+    
+    print("\n=== TESTS TERMINÉS ===")

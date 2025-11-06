@@ -1,0 +1,167 @@
+import os
+import shutil
+import tempfile
+from contextlib import contextmanager
+
+@contextmanager
+def repertoire_temporaire(prefix="temp_"):
+    """
+    Crée un répertoire temporaire et le supprime automatiquement après usage.
+    
+    Args:
+        prefix (str): Préfixe pour le nom du répertoire temporaire
+        
+    Yields:
+        str: Chemin du répertoire temporaire créé
+        
+    Exemple:
+        with repertoire_temporaire() as temp_dir:
+            # Utiliser temp_dir pour vos opérations
+            with open(os.path.join(temp_dir, "fichier.txt"), "w") as f:
+                f.write("Contenu temporaire")
+            # Le répertoire est automatiquement supprimé à la fin du bloc
+    """
+    temp_dir = None
+    try:
+        # Créer un répertoire temporaire
+        temp_dir = tempfile.mkdtemp(prefix=prefix)
+        print(f"📁 Répertoire temporaire créé : {temp_dir}")
+        
+        # Donner le contrôle à l'utilisateur
+        yield temp_dir
+        
+    except Exception as e:
+        print(f"❌ Erreur dans le répertoire temporaire : {e}")
+        raise
+    finally:
+        # Nettoyage automatique
+        if temp_dir and os.path.exists(temp_dir):
+            try:
+                shutil.rmtree(temp_dir)
+                print(f"🧹 Répertoire temporaire supprimé : {temp_dir}")
+            except Exception as e:
+                print(f"⚠️  Impossible de supprimer {temp_dir} : {e}")
+
+def utiliser_repertoire_temporaire():
+    """Exemple d'utilisation du répertoire temporaire"""
+    
+    print("=== DÉMONSTRATION RÉPERTOIRE TEMPORAIRE ===\n")
+    
+    # Utilisation avec le context manager
+    with repertoire_temporaire("mon_app_") as temp_dir:
+        print(f"1. Répertoire actuel : {temp_dir}")
+        
+        # Créer quelques fichiers
+        fichiers = ["config.txt", "data.csv", "log.txt"]
+        for fichier in fichiers:
+            chemin_fichier = os.path.join(temp_dir, fichier)
+            with open(chemin_fichier, "w") as f:
+                f.write(f"Contenu du fichier {fichier}\n")
+                f.write("Ligne 1\nLigne 2\nLigne 3")
+            print(f"2. Fichier créé : {chemin_fichier}")
+        
+        # Créer un sous-répertoire
+        sous_dir = os.path.join(temp_dir, "sous_dossier")
+        os.makedirs(sous_dir)
+        print(f"3. Sous-répertoire créé : {sous_dir}")
+        
+        # Lister le contenu
+        print("\n4. Contenu du répertoire temporaire :")
+        for racine, dossiers, fichiers in os.walk(temp_dir):
+            niveau = racine.replace(temp_dir, '').count(os.sep)
+            indent = ' ' * 2 * niveau
+            print(f"{indent}📁 {os.path.basename(racine)}/")
+            sous_indent = ' ' * 2 * (niveau + 1)
+            for fichier in fichiers:
+                print(f"{sous_indent}📄 {fichier}")
+        
+        # Simuler un traitement
+        print(f"\n5. Simulation de traitement dans {temp_dir}...")
+        total_fichiers = sum(len(fichiers) for _, _, fichiers in os.walk(temp_dir))
+        print(f"   {total_fichiers} fichiers traités")
+        
+        print("\n6. Fin du bloc 'with' - suppression automatique imminent...")
+    
+    # Ici le répertoire est automatiquement supprimé
+    print("\n7. Vérification que le répertoire est supprimé...")
+    if not os.path.exists(temp_dir):
+        print("✅ Répertoire temporaire correctement supprimé")
+    else:
+        print("❌ Le répertoire temporaire n'a pas été supprimé")
+
+def exemple_operations_complexes():
+    """Exemple avec des opérations plus complexes"""
+    
+    print("\n" + "="*50)
+    print("EXEMPLE AVEC TRAITEMENT DE FICHIERS")
+    print("="*50)
+    
+    with repertoire_temporaire("processing_") as temp_dir:
+        # Création de fichiers de données
+        donnees = {
+            "utilisateurs.csv": "id,nom,email\n1,Alice,alice@test.com\n2,Bob,bob@test.com",
+            "config.json": '{"app": "test", "version": 1.0}',
+            "log.txt": "Début du traitement...\n"
+        }
+        
+        for nom_fichier, contenu in donnees.items():
+            chemin = os.path.join(temp_dir, nom_fichier)
+            with open(chemin, "w") as f:
+                f.write(contenu)
+            print(f"📝 Fichier de données créé : {nom_fichier}")
+        
+        # Simuler un traitement de données
+        print("\n🔧 Simulation de traitement...")
+        
+        # Lire et traiter les fichiers
+        for nom_fichier in os.listdir(temp_dir):
+            chemin = os.path.join(temp_dir, nom_fichier)
+            taille = os.path.getsize(chemin)
+            print(f"   Traitement de {nom_fichier} ({taille} octets)")
+        
+        # Créer un résultat
+        resultat_path = os.path.join(temp_dir, "resultat.txt")
+        with open(resultat_path, "w") as f:
+            f.write("Traitement terminé avec succès!\n")
+            f.write(f"Fichiers traités: {len(os.listdir(temp_dir))}")
+        
+        print(f"\n📊 Résultat sauvegardé dans : {resultat_path}")
+        
+        # Afficher le contenu du résultat
+        with open(resultat_path, "r") as f:
+            print("Contenu du résultat:")
+            for ligne in f:
+                print(f"   {ligne.strip()}")
+
+def exemple_avec_exception():
+    """Exemple montrant que le répertoire est supprimé même en cas d'erreur"""
+    
+    print("\n" + "="*50)
+    print("EXEMPLE AVEC ERREUR (nettoyage garanti)")
+    print("="*50)
+    
+    try:
+        with repertoire_temporaire("error_test_") as temp_dir:
+            print(f"🧪 Test dans : {temp_dir}")
+            
+            # Créer un fichier
+            test_file = os.path.join(temp_dir, "test.txt")
+            with open(test_file, "w") as f:
+                f.write("Ce fichier sera perdu à cause de l'erreur")
+            
+            # Simuler une erreur
+            raise ValueError("💥 Erreur simulée pendant le traitement!")
+            
+    except ValueError as e:
+        print(f"❌ Erreur attrapée : {e}")
+        print("✅ Le répertoire temporaire a été nettoyé malgré l'erreur")
+
+if __name__ == "__main__":
+    # Exécuter tous les exemples
+    utiliser_repertoire_temporaire()
+    exemple_operations_complexes()
+    exemple_avec_exception()
+    
+    print("\n" + "="*50)
+    print("🎉 TOUS LES EXEMPLES TERMINÉS")
+    print("="*50)
